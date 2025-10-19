@@ -4,15 +4,23 @@ This module coordinates cognitive processing across multiple workers
 in a distributed Aphrodite deployment.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 import threading
 from dataclasses import dataclass
 import logging
 
 logger = logging.getLogger(__name__)
 
-from aphrodite.opencog.atomspace import AtomSpace, Atom, AtomType
-from aphrodite.opencog.config import (OpenCogConfig, DistributionStrategy)
+if TYPE_CHECKING:
+    from aphrodite.opencog.atomspace import AtomSpace, Atom, AtomType
+    from aphrodite.opencog.config import OpenCogConfig, DistributionStrategy
+else:
+    # Avoid circular imports by using late binding
+    AtomSpace = Any
+    Atom = Any
+    AtomType = Any
+    OpenCogConfig = Any
+    DistributionStrategy = Any
 
 
 @dataclass
@@ -20,7 +28,7 @@ class CognitiveTask:
     """A task for distributed cognitive processing."""
     task_id: str
     task_type: str
-    atoms: List[Atom]
+    atoms: List[Any]  # List[Atom]
     priority: float = 1.0
     metadata: Dict[str, Any] = None
     
@@ -34,8 +42,8 @@ class CognitiveResult:
     """Result from cognitive processing."""
     task_id: str
     success: bool
-    atoms: List[Atom]
-    inferences: List[Atom]
+    atoms: List[Any]  # List[Atom]
+    inferences: List[Any]  # List[Atom]
     confidence: float
     metadata: Dict[str, Any] = None
     
@@ -47,8 +55,8 @@ class CognitiveResult:
 class CognitiveWorker:
     """Worker for processing cognitive tasks."""
     
-    def __init__(self, worker_id: int, atomspace: AtomSpace,
-                 config: OpenCogConfig):
+    def __init__(self, worker_id: int, atomspace: 'AtomSpace',
+                 config: 'OpenCogConfig'):
         self.worker_id = worker_id
         self.atomspace = atomspace
         self.config = config
@@ -65,6 +73,8 @@ class CognitiveWorker:
         Returns:
             Result of the cognitive processing
         """
+        from aphrodite.opencog.atomspace import AtomType
+        
         with self._lock:
             logger.debug(f"Worker {self.worker_id} processing task "
                         f"{task.task_id}")
@@ -132,15 +142,17 @@ class DistributedCognitionCoordinator:
     multiple workers and synchronizes their AtomSpaces.
     """
     
-    def __init__(self, config: OpenCogConfig, 
+    def __init__(self, config: 'OpenCogConfig', 
                  num_workers: Optional[int] = None):
+        from aphrodite.opencog.atomspace import AtomSpace
+        
         self.config = config
         self.num_workers = (num_workers or 
                           config.distributed_config.num_cognitive_workers or 
                           1)
         
         # Create AtomSpaces for each worker
-        self.atomspaces: List[AtomSpace] = [
+        self.atomspaces: List[Any] = [  # List[AtomSpace]
             AtomSpace() for _ in range(self.num_workers)
         ]
         

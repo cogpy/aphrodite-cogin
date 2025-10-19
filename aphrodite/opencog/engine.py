@@ -5,19 +5,34 @@ cognitive architecture with Aphrodite's LLM inference engine for distributed
 cognition at scale.
 """
 
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, TYPE_CHECKING
 import time
 import logging
 
 logger = logging.getLogger(__name__)
 
-from aphrodite.opencog.atomspace import (AtomSpace, Atom, AtomType, 
-                                         TruthValue)
-from aphrodite.opencog.config import OpenCogConfig, CognitiveMode
-from aphrodite.opencog.distributed import (DistributedCognitionCoordinator,
-                                           CognitiveTask, CognitiveResult)
-from aphrodite.common.sequence import SequenceGroup, SequenceGroupOutput
-from aphrodite.common.outputs import RequestOutput
+if TYPE_CHECKING:
+    from aphrodite.opencog.atomspace import (AtomSpace, Atom, AtomType, 
+                                             TruthValue)
+    from aphrodite.opencog.config import OpenCogConfig, CognitiveMode
+    from aphrodite.opencog.distributed import (DistributedCognitionCoordinator,
+                                               CognitiveTask, CognitiveResult)
+    from aphrodite.common.sequence import SequenceGroup, SequenceGroupOutput
+    from aphrodite.common.outputs import RequestOutput
+else:
+    # Avoid circular imports
+    AtomSpace = Any
+    Atom = Any
+    AtomType = Any
+    TruthValue = Any
+    OpenCogConfig = Any
+    CognitiveMode = Any
+    DistributedCognitionCoordinator = Any
+    CognitiveTask = Any
+    CognitiveResult = Any
+    SequenceGroup = Any
+    SequenceGroupOutput = Any
+    RequestOutput = Any
 
 
 class OpenCogEngine:
@@ -32,13 +47,18 @@ class OpenCogEngine:
     - Cognitive inference and reasoning
     """
     
-    def __init__(self, config: Optional[OpenCogConfig] = None):
+    def __init__(self, config: Optional['OpenCogConfig'] = None):
         """Initialize the OpenCog Engine.
         
         Args:
             config: OpenCog configuration. If None, uses default config.
         """
-        self.config = config or OpenCogConfig()
+        # Runtime imports to avoid circular dependencies
+        from aphrodite.opencog.atomspace import AtomSpace, AtomType
+        from aphrodite.opencog.config import OpenCogConfig as ConfigClass
+        from aphrodite.opencog.distributed import DistributedCognitionCoordinator
+        
+        self.config = config or ConfigClass()
         self.config.validate()
         
         # Initialize main AtomSpace
@@ -67,7 +87,7 @@ class OpenCogEngine:
                    f"{self.config.cognitive_mode.value}")
     
     def ground_text(self, text: str, context: Optional[Dict[str, Any]] = None
-                   ) -> List[Atom]:
+                   ) -> List['Atom']:
         """Ground text in the AtomSpace by creating semantic representations.
         
         Args:
@@ -77,6 +97,8 @@ class OpenCogEngine:
         Returns:
             List of atoms created for the text
         """
+        from aphrodite.opencog.atomspace import AtomType, TruthValue
+        
         start_time = time.time()
         atoms = []
         
@@ -158,9 +180,9 @@ class OpenCogEngine:
         return atoms
     
     def process_sequence_group(self, 
-                               seq_group: SequenceGroup,
-                               output: Optional[SequenceGroupOutput] = None
-                              ) -> Optional[CognitiveResult]:
+                               seq_group: 'SequenceGroup',
+                               output: Optional['SequenceGroupOutput'] = None
+                              ) -> Optional['CognitiveResult']:
         """Process a sequence group through cognitive architecture.
         
         Args:
@@ -170,6 +192,9 @@ class OpenCogEngine:
         Returns:
             Cognitive processing result if applicable
         """
+        from aphrodite.opencog.distributed import CognitiveTask, CognitiveResult
+        from aphrodite.opencog.config import CognitiveMode
+        
         if not self.config.enable_opencog:
             return None
         
@@ -213,8 +238,10 @@ class OpenCogEngine:
         
         return result
     
-    def _process_reactive(self, task: CognitiveTask) -> CognitiveResult:
+    def _process_reactive(self, task: 'CognitiveTask') -> 'CognitiveResult':
         """Process task in reactive mode (fast)."""
+        from aphrodite.opencog.distributed import CognitiveResult
+        
         # Simple local processing without inference
         return CognitiveResult(
             task_id=task.task_id,
@@ -225,8 +252,10 @@ class OpenCogEngine:
             metadata={"mode": "reactive"}
         )
     
-    def _process_deliberative(self, task: CognitiveTask) -> CognitiveResult:
+    def _process_deliberative(self, task: 'CognitiveTask') -> 'CognitiveResult':
         """Process task in deliberative mode (thorough)."""
+        from aphrodite.opencog.distributed import CognitiveResult
+        
         if self.coordinator:
             # Use distributed processing
             self.coordinator.submit_task(task)
@@ -246,7 +275,7 @@ class OpenCogEngine:
             metadata={"mode": "deliberative_local"}
         )
     
-    def _process_hybrid(self, task: CognitiveTask) -> CognitiveResult:
+    def _process_hybrid(self, task: 'CognitiveTask') -> 'CognitiveResult':
         """Process task in hybrid mode (adaptive)."""
         # Decide based on task complexity
         if len(task.atoms) < 10:
@@ -254,7 +283,7 @@ class OpenCogEngine:
         else:
             return self._process_deliberative(task)
     
-    def get_focused_atoms(self, limit: Optional[int] = None) -> List[Atom]:
+    def get_focused_atoms(self, limit: Optional[int] = None) -> List['Atom']:
         """Get atoms in current attentional focus.
         
         Args:
@@ -263,6 +292,8 @@ class OpenCogEngine:
         Returns:
             List of atoms with high attention values
         """
+        from aphrodite.opencog.atomspace import AtomType
+        
         if not self.config.attention_config.enable_attention_allocation:
             return []
         
@@ -283,7 +314,7 @@ class OpenCogEngine:
         
         return focused
     
-    def allocate_attention(self, atoms: List[Atom], 
+    def allocate_attention(self, atoms: List['Atom'], 
                           importance: float = 1.0) -> None:
         """Allocate attention to specific atoms.
         
@@ -303,6 +334,8 @@ class OpenCogEngine:
     
     def decay_attention(self) -> None:
         """Decay attention values over time."""
+        from aphrodite.opencog.atomspace import AtomType
+        
         if not self.config.attention_config.enable_attention_allocation:
             return
         
