@@ -22,6 +22,7 @@ Aphrodite builds upon and integrates the exceptional work from [various projects
 - Speculative decoding
 - Multimodal support
 - Multi-LoRA support
+- **OpenCog Integration**: Distributed cognition over large-scale LLM inference with hypergraph knowledge representation (see [docs/OPENCOG.md](docs/OPENCOG.md))
 
 
 ## Quickstart
